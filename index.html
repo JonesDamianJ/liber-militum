@@ -263,15 +263,26 @@
     background: none;
     border: 1px solid transparent;
     cursor: pointer;
-    color: var(--border);
-    font-size: 16px;
-    padding: 4px 6px;
+    color: var(--muted);
+    font-size: 15px;
+    padding: 4px 7px;
     border-radius: 2px;
-    transition: color 0.15s, border-color 0.15s;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    line-height: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .icon-btn span {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     line-height: 1;
   }
-  .icon-btn:hover { color: var(--gold); border-color: var(--border); }
-  .icon-btn.del:hover { color: var(--blood); border-color: var(--blood); }
+  .icon-btn:hover { color: var(--gold); border-color: var(--border); background: #1a1610; }
+  .icon-btn.del:hover { color: var(--blood); border-color: var(--blood); background: #1a0a08; }
   .unit-note-full {
     font-size: 13px;
     color: var(--muted);
@@ -420,6 +431,28 @@
 
   /* Hidden file input */
   #importInput { display: none; }
+
+  /* Model pips */
+  .pip-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-dim); }
+  .pip {
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.35);
+    flex-shrink: 0;
+    title: '';
+  }
+  .pip-legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; }
+  .pip-legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); font-style: italic; }
+  .pip-legend-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.3); flex-shrink:0; }
+
+  /* Breakdown inputs in modal */
+  .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .breakdown-item { display: flex; flex-direction: column; gap: 3px; }
+  .breakdown-item label { font-family: 'Cinzel', serif; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 5px; }
+  .breakdown-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .breakdown-item input { background: var(--ink); border: 1px solid var(--border); color: var(--bone); font-family: 'Crimson Text', serif; font-size: 14px; padding: 6px 8px; outline: none; border-radius: 2px; width: 100%; }
+  .breakdown-item input:focus { border-color: var(--blood); }
+  .breakdown-total { font-size: 12px; color: var(--muted-dk); font-style: italic; margin-top: 4px; }
+  .breakdown-total.over { color: #c0392b; }
 </style>
 </head>
 <body>
@@ -476,19 +509,47 @@
     <div class="modal-title" id="modalTitle">Enlist warrior</div>
     <div class="field">
       <label>Unit name</label>
-      <input type="text" id="mName" placeholder="e.g. Intercessor Squad">
+      <select id="mNameSel" onchange="onNameSelChange()"></select>
+      <input type="text" id="mNameNew" placeholder="Enter new unit name…" style="display:none;margin-top:6px">
     </div>
     <div class="field">
       <label>Faction</label>
-      <input type="text" id="mFaction" placeholder="e.g. Space Marines">
+      <select id="mFactionSel" onchange="onFactionSelChange()"></select>
+      <input type="text" id="mFactionNew" placeholder="Enter new faction name…" style="display:none;margin-top:6px">
     </div>
     <div class="field">
-      <label>Number of models</label>
-      <input type="number" id="mCount" min="1" value="1">
+      <label>Total models</label>
+      <input type="number" id="mCount" min="1" value="1" oninput="onCountChange()">
     </div>
     <div class="field">
-      <label>Status</label>
+      <label>Overall status</label>
       <select id="mStatus"></select>
+    </div>
+    <div class="field">
+      <label style="margin-bottom:6px">Model breakdown <span style="font-family:'Crimson Text',serif;font-style:italic;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted-dk)">— optional, must sum to total</span></label>
+      <div class="breakdown-grid">
+        <div class="breakdown-item">
+          <label><div class="breakdown-dot" style="background:#2d6b3a"></div>Complete</label>
+          <input type="number" id="bd_complete" min="0" value="0" oninput="onBreakdownChange()">
+        </div>
+        <div class="breakdown-item">
+          <label><div class="breakdown-dot" style="background:#4a6b8a"></div>Based</label>
+          <input type="number" id="bd_based" min="0" value="0" oninput="onBreakdownChange()">
+        </div>
+        <div class="breakdown-item">
+          <label><div class="breakdown-dot" style="background:#7a5c9e"></div>Painted</label>
+          <input type="number" id="bd_painted" min="0" value="0" oninput="onBreakdownChange()">
+        </div>
+        <div class="breakdown-item">
+          <label><div class="breakdown-dot" style="background:#b87333"></div>Assembled</label>
+          <input type="number" id="bd_assembled" min="0" value="0" oninput="onBreakdownChange()">
+        </div>
+        <div class="breakdown-item">
+          <label><div class="breakdown-dot" style="background:#6b6560"></div>On Sprue</label>
+          <input type="number" id="bd_on_sprue" min="0" value="0" oninput="onBreakdownChange()">
+        </div>
+      </div>
+      <div class="breakdown-total" id="breakdownTotal"></div>
     </div>
     <div class="field">
       <label>Notes</label>
@@ -570,10 +631,30 @@ function getSorted(arr) {
   });
 }
 
+function buildPips(u) {
+  const bd = u.breakdown;
+  if (!bd) return '';
+  const total = STATUS_ORDER.reduce((s, k) => s + (bd[k] || 0), 0);
+  if (total === 0) return '';
+  // Build ordered pip list: complete first down to on_sprue
+  const pips = STATUS_ORDER.flatMap(k => Array(bd[k] || 0).fill(k));
+  const pipHTML = pips.map(k =>
+    `<div class="pip" style="background:${STATUS[k].color}" title="${STATUS[k].label}"></div>`
+  ).join('');
+  // Legend: only statuses with >0 models
+  const legendHTML = STATUS_ORDER
+    .filter(k => bd[k] > 0)
+    .map(k => `<div class="pip-legend-item"><div class="pip-legend-dot" style="background:${STATUS[k].color}"></div>${bd[k]} ${STATUS[k].label}</div>`)
+    .join('');
+  return `<div class="pip-row">${pipHTML}</div><div class="pip-legend">${legendHTML}</div>`;
+}
+
 function unitCardHTML(u) {
   const gi = units.indexOf(u);
   const hasNote = u.notes && u.notes.trim();
   const exp = expandedNotes.has(gi);
+  const activeTiers = u.breakdown ? STATUS_ORDER.filter(k => u.breakdown[k] > 0) : [];
+  const hasPips = activeTiers.length > 1;
   return `
   <div class="unit-card" style="border-left-color:${STATUS[u.status]?.color||'#3a3530'}">
     <div class="unit-card-main">
@@ -587,11 +668,13 @@ function unitCardHTML(u) {
         ${STATUS_ORDER.map(k => `<option value="${k}" ${u.status===k?'selected':''}>${STATUS[k].label}</option>`).join('')}
       </select>
       <div class="unit-actions">
-        ${hasNote ? `<button class="icon-btn" onclick="toggleNote(${gi})" aria-label="${exp?'Hide':'Show'} notes" title="Notes"><i class="ti ti-${exp?'chevron-up':'notes'}"></i></button>` : ''}
-        <button class="icon-btn" onclick="openModal(${gi})" aria-label="Edit unit" title="Edit"><i class="ti ti-edit"></i></button>
-        <button class="icon-btn del" onclick="deleteUnit(${gi})" aria-label="Delete unit" title="Delete"><i class="ti ti-trash"></i></button>
+        ${hasNote ? `<button class="icon-btn" onclick="toggleNote(${gi})" aria-label="${exp?'Hide':'Show'} notes" title="Notes"><i class="ti ti-${exp?'chevron-up':'notes'}"></i><span>${exp?'Hide':'Notes'}</span></button>` : ''}
+        <button class="icon-btn" onclick="duplicateUnit(${gi})" aria-label="Duplicate unit" title="Duplicate"><i class="ti ti-copy"></i><span>Copy</span></button>
+        <button class="icon-btn" onclick="openModal(${gi})" aria-label="Edit unit" title="Edit"><i class="ti ti-edit"></i><span>Edit</span></button>
+        <button class="icon-btn del" onclick="deleteUnit(${gi})" aria-label="Delete unit" title="Delete"><i class="ti ti-trash"></i><span>Delete</span></button>
       </div>
     </div>
+    ${hasPips ? buildPips(u) : ''}
     ${hasNote && exp ? `<div class="unit-note-full">${esc(u.notes)}</div>` : ''}
   </div>`;
 }
@@ -665,6 +748,13 @@ function toggleNote(i) { expandedNotes.has(i) ? expandedNotes.delete(i) : expand
 function toggleSection(s) { collapsedSections.has(s) ? collapsedSections.delete(s) : collapsedSections.add(s); render(); }
 function changeStatus(i, val) { units[i].status = val; render(); }
 
+function duplicateUnit(i) {
+  const copy = { ...units[i], name: units[i].name, status: 'on_sprue', breakdown: null };
+  units.splice(i + 1, 0, copy);
+  render();
+  showToast(`${units[i].name} duplicated — reset to On Sprue`);
+}
+
 function deleteUnit(i) {
   const name = units[i].name;
   units.splice(i, 1);
@@ -674,20 +764,123 @@ function deleteUnit(i) {
   showToast(`${name} removed from the liber`);
 }
 
+function bdIds() { return STATUS_ORDER.map(k => `bd_${k}`); }
+
+function onCountChange() {
+  onBreakdownChange();
+}
+
+function onBreakdownChange() {
+  const total = parseInt(document.getElementById('mCount').value) || 0;
+  const sum = STATUS_ORDER.reduce((s, k) => s + (parseInt(document.getElementById(`bd_${k}`)?.value) || 0), 0);
+  const el = document.getElementById('breakdownTotal');
+  if (sum === 0) { el.textContent = ''; return; }
+  el.textContent = `${sum} of ${total} models assigned`;
+  el.className = 'breakdown-total' + (sum > total ? ' over' : '');
+}
+
+function getUnitNames() {
+  return [...new Set(units.map(u => u.name).filter(Boolean))].sort();
+}
+
+function populateNameSel(selected) {
+  const names = getUnitNames();
+  const sel = document.getElementById('mNameSel');
+  sel.innerHTML = [
+    '<option value="">— Select unit —</option>',
+    ...names.map(n => `<option value="${esc(n)}" ${n===selected?'selected':''}>${esc(n)}</option>`),
+    '<option value="__new__">+ Add new unit…</option>',
+  ].join('');
+  if (selected && !names.includes(selected)) {
+    sel.value = '__new__';
+    document.getElementById('mNameNew').style.display = 'block';
+    document.getElementById('mNameNew').value = selected;
+  } else {
+    document.getElementById('mNameNew').style.display = 'none';
+    document.getElementById('mNameNew').value = '';
+  }
+}
+
+function onNameSelChange() {
+  const newInput = document.getElementById('mNameNew');
+  if (document.getElementById('mNameSel').value === '__new__') {
+    newInput.style.display = 'block';
+    newInput.focus();
+  } else {
+    newInput.style.display = 'none';
+    newInput.value = '';
+  }
+}
+
+function getSelectedName() {
+  const sel = document.getElementById('mNameSel');
+  if (sel.value === '__new__') return document.getElementById('mNameNew').value.trim();
+  return sel.value;
+}
+
+function getFactions() {
+  return [...new Set(units.map(u => u.faction).filter(Boolean))].sort();
+}
+
+function populateFactionSel(selected) {
+  const factions = getFactions();
+  const sel = document.getElementById('mFactionSel');
+  sel.innerHTML = [
+    '<option value="">— No faction —</option>',
+    ...factions.map(f => `<option value="${esc(f)}" ${f===selected?'selected':''}>${esc(f)}</option>`),
+    '<option value="__new__">+ Add new faction…</option>',
+  ].join('');
+  // If the selected value isn't in the list, treat as new
+  if (selected && !factions.includes(selected)) {
+    sel.value = '__new__';
+    document.getElementById('mFactionNew').style.display = 'block';
+    document.getElementById('mFactionNew').value = selected;
+  } else {
+    document.getElementById('mFactionNew').style.display = 'none';
+    document.getElementById('mFactionNew').value = '';
+  }
+}
+
+function onFactionSelChange() {
+  const newInput = document.getElementById('mFactionNew');
+  if (document.getElementById('mFactionSel').value === '__new__') {
+    newInput.style.display = 'block';
+    newInput.focus();
+  } else {
+    newInput.style.display = 'none';
+    newInput.value = '';
+  }
+}
+
+function getSelectedFaction() {
+  const sel = document.getElementById('mFactionSel');
+  if (sel.value === '__new__') return document.getElementById('mFactionNew').value.trim();
+  return sel.value;
+}
+
 function openModal(i) {
   editIndex = (i !== undefined) ? i : null;
   const u = editIndex !== null ? units[editIndex] : null;
   document.getElementById('modalTitle').textContent = u ? 'Edit warrior' : 'Enlist warrior';
   document.getElementById('modalSaveBtn').textContent = u ? 'Confirm' : 'Enlist';
-  document.getElementById('mName').value = u ? u.name : '';
-  document.getElementById('mFaction').value = u ? (u.faction || '') : '';
+  populateNameSel(u ? u.name : '');
+  // If no units yet, show new input immediately
+  if (getUnitNames().length === 0) {
+    document.getElementById('mNameSel').value = '__new__';
+    document.getElementById('mNameNew').style.display = 'block';
+  }
   document.getElementById('mCount').value = u ? u.count : 1;
   document.getElementById('mNotes').value = u ? (u.notes || '') : '';
   document.getElementById('mStatus').innerHTML = STATUS_ORDER.map(k =>
     `<option value="${k}" ${(u?.status||'on_sprue')===k?'selected':''}>${STATUS[k].label}</option>`
   ).join('');
+  populateFactionSel(u ? (u.faction || '') : '');
+  STATUS_ORDER.forEach(k => {
+    document.getElementById(`bd_${k}`).value = u?.breakdown?.[k] || 0;
+  });
+  document.getElementById('breakdownTotal').textContent = '';
   document.getElementById('modalOverlay').style.display = 'flex';
-  setTimeout(() => document.getElementById('mName').focus(), 50);
+  setTimeout(() => document.getElementById('mNameSel').focus(), 50);
 }
 
 function closeModal() {
@@ -698,14 +891,25 @@ function closeModal() {
 function overlayClick(e) { if (e.target.id === 'modalOverlay') closeModal(); }
 
 function saveUnit() {
-  const name = document.getElementById('mName').value.trim();
-  if (!name) { document.getElementById('mName').focus(); return; }
+  const name = getSelectedName();
+  if (!name) { document.getElementById('mNameSel').focus(); return; }
+  const count = Math.max(1, parseInt(document.getElementById('mCount').value) || 1);
+  const bd = {};
+  let bdSum = 0;
+  STATUS_ORDER.forEach(k => {
+    const v = Math.max(0, parseInt(document.getElementById(`bd_${k}`).value) || 0);
+    bd[k] = v;
+    bdSum += v;
+  });
+  if (bdSum > count) { showToast('Breakdown exceeds total model count'); return; }
+  const hasBreakdown = bdSum > 0;
   const unit = {
     name,
-    faction: document.getElementById('mFaction').value.trim(),
-    count: Math.max(1, parseInt(document.getElementById('mCount').value) || 1),
+    faction: getSelectedFaction(),
+    count,
     status: document.getElementById('mStatus').value,
     notes: document.getElementById('mNotes').value.trim(),
+    breakdown: hasBreakdown ? bd : null,
   };
   const isEdit = editIndex !== null;
   if (isEdit) units[editIndex] = unit;
