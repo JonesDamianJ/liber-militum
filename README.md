@@ -2,13 +2,6 @@
 
 A grimdark Warhammer 40K army painting tracker. Tracks units across six stages: On Sprue → Assembled → Painted → Based & Primed → Battle Ready (complete).
 
-## Deploy to GitHub Pages
-
-1. Create a new repo on GitHub (e.g. `liber-militum`)
-2. Upload all files in this folder to the repo root
-3. Go to **Settings → Pages → Source** and set it to `main` branch, `/ (root)`
-4. Your app will be live at `https://yourusername.github.io/liber-militum`
-
 ## Add to home screen (iPhone / Android)
 
 - Open the URL in Safari (iPhone) or Chrome (Android)
