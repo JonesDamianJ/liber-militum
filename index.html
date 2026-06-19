@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Liber Militum">
+<title>Liber Militum — 40K Army Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f0d0a">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  :root {
+    --ink: #1a1410;
+    --ink-deep: #0f0d0a;
+    --border: #3a3530;
+    --border-dim: #2a2520;
+    --gold: #d4a017;
+    --gold-dk: #b8860b;
+    --blood: #8b2e0f;
+    --muted: #6b5d4a;
+    --muted-dk: #5a524a;
+    --bone: #d4c49a;
+    --bone-dk: #b8a882;
+    --c-complete: #2d6b3a;
+    --c-based: #4a6b8a;
+    --c-painted: #7a5c9e;
+    --c-assembled: #b87333;
+    --c-sprue: #6b6560;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    min-height: 100%;
+    background: #111009;
+    font-family: 'Crimson Text', Georgia, serif;
+    color: var(--bone);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Layout */
+  .app { max-width: 720px; margin: 0 auto; padding: 0 0 4rem; }
+
+  /* Header */
+  .header {
+    background: var(--ink-deep);
+    border-bottom: 2px solid var(--blood);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .header-title {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-title i { font-size: 22px; color: var(--blood); }
+  .faction-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+  .faction-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    border-radius: 2px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .faction-btn.active { border-color: var(--blood); color: var(--gold); background: #1f1a14; }
+
+  /* Main content */
+  .content { padding: 1.25rem 1.25rem 0; }
+
+  /* Summary cards */
+  .summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+  .stat-card {
+    background: var(--ink-deep);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--blood);
+    padding: 0.65rem 1rem;
+  }
+  .stat-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .stat-value { font-size: 26px; font-weight: 600; color: var(--gold); line-height: 1; }
+  .stat-sub { font-size: 11px; color: var(--muted-dk); margin-top: 3px; font-style: italic; }
+
+  /* Progress bar */
+  .progress-wrap {
+    height: 8px;
+    background: var(--ink-deep);
+    border: 1px solid var(--border);
+    margin: 1rem 0 0.75rem;
+    display: flex;
+    overflow: hidden;
+  }
+  .pb-seg { height: 100%; transition: width 0.4s ease; }
+
+  /* Legend */
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); font-style: italic; }
+  .legend-swatch { width: 14px; height: 8px; border: 1px solid var(--border); flex-shrink: 0; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border-dim); margin: 0.75rem 0 1.25rem; position: relative; }
+  .divider::before { content: '✦'; position: absolute; left: 50%; transform: translateX(-50%) translateY(-50%); background: var(--ink); padding: 0 8px; color: var(--blood); font-size: 11px; }
+
+  /* Toolbar */
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .search-wrap { position: relative; flex: 1; min-width: 150px; }
+  .search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--muted-dk); pointer-events: none; }
+  .search-wrap input {
+    width: 100%;
+    background: var(--ink-deep);
+    border: 1px solid var(--border);
+    color: var(--bone);
+    font-family: 'Crimson Text', serif;
+    font-size: 15px;
+    padding: 8px 10px 8px 34px;
+    outline: none;
+    border-radius: 2px;
+  }
+  .search-wrap input::placeholder { color: var(--border); }
+  .search-wrap input:focus { border-color: var(--blood); }
+  .grim-select {
+    background: var(--ink-deep);
+    border: 1px solid var(--border);
+    color: var(--bone);
+    font-family: 'Crimson Text', serif;
+    font-size: 14px;
+    padding: 8px 10px;
+    cursor: pointer;
+    outline: none;
+    border-radius: 2px;
+  }
+  .grim-select:focus { border-color: var(--blood); }
+  .add-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid var(--blood);
+    background: #1f0d08;
+    color: var(--gold);
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 2px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .add-btn:hover { background: #2e1208; border-color: var(--gold); }
+
+  /* Export/Import */
+  .io-bar { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .io-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .io-btn:hover { color: var(--gold); border-color: var(--gold-dk); }
+  .io-note { font-size: 12px; color: var(--muted-dk); font-style: italic; align-self: center; }
+
+  /* Status sections */
+  .status-section { margin-bottom: 1.25rem; }
+  .status-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 0;
+  }
+  .section-stripe { width: 4px; height: 20px; flex-shrink: 0; }
+  .section-title { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+  .section-count { font-size: 12px; color: var(--muted-dk); font-style: italic; margin-left: auto; }
+  .section-toggle { font-size: 15px; color: var(--muted-dk); }
+
+  /* Unit cards */
+  .unit-list { display: flex; flex-direction: column; gap: 6px; }
+  .unit-card {
+    background: var(--ink-deep);
+    border: 1px solid var(--border-dim);
+    border-left: 3px solid var(--border);
+    padding: 10px 14px;
+    border-radius: 0 2px 2px 0;
+    transition: border-color 0.15s;
+  }
+  .unit-card-main { display: flex; align-items: center; gap: 12px; }
+  .unit-info { flex: 1; min-width: 0; }
+  .unit-name {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bone);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .unit-meta { font-size: 12px; color: var(--muted); margin-top: 1px; font-style: italic; }
+  .unit-note-preview {
+    font-size: 12px;
+    color: var(--muted-dk);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-style: italic;
+    cursor: pointer;
+  }
+  .unit-count { font-size: 13px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .unit-status-sel {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    border: 1px solid var(--border);
+    padding: 4px 6px;
+    background: var(--ink);
+    color: var(--bone);
+    cursor: pointer;
+    flex-shrink: 0;
+    letter-spacing: 0.03em;
+    outline: none;
+    border-radius: 2px;
+  }
+  .unit-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .icon-btn {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: var(--border);
+    font-size: 16px;
+    padding: 4px 6px;
+    border-radius: 2px;
+    transition: color 0.15s, border-color 0.15s;
+    line-height: 1;
+  }
+  .icon-btn:hover { color: var(--gold); border-color: var(--border); }
+  .icon-btn.del:hover { color: var(--blood); border-color: var(--blood); }
+  .unit-note-full {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-dim);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    font-style: italic;
+  }
+  .empty-section { font-size: 13px; color: var(--border); font-style: italic; padding: 6px 0 2px 14px; }
+  .empty-app { text-align: center; padding: 4rem 1rem; color: var(--border); }
+  .empty-app i { font-size: 48px; display: block; margin-bottom: 12px; }
+  .empty-app p { font-size: 15px; font-style: italic; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 1rem;
+  }
+  .modal {
+    background: var(--ink-deep);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--blood);
+    padding: 1.5rem;
+    width: 360px;
+    max-width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 2px;
+  }
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-dim);
+  }
+  .field { margin-bottom: 13px; }
+  .field label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 5px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    background: var(--ink);
+    border: 1px solid var(--border);
+    color: var(--bone);
+    font-family: 'Crimson Text', serif;
+    font-size: 15px;
+    padding: 8px 10px;
+    outline: none;
+    resize: vertical;
+    border-radius: 2px;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blood); }
+  .field input::placeholder, .field textarea::placeholder { color: var(--border); }
+  .field textarea { min-height: 80px; line-height: 1.5; }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-dim);
+  }
+  .btn-cancel {
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-radius: 2px;
+  }
+  .btn-save {
+    padding: 8px 18px;
+    border: 1px solid var(--blood);
+    background: #1f0d08;
+    color: var(--gold);
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-save:hover { background: #2e1208; border-color: var(--gold); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--ink-deep);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    color: var(--bone);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    padding: 10px 20px;
+    white-space: nowrap;
+    z-index: 300;
+    transition: transform 0.3s ease;
+    border-radius: 2px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Mobile tweaks */
+  @media (max-width: 540px) {
+    .header { padding: 0.875rem 1rem; }
+    .header-title { font-size: 17px; }
+    .content { padding: 1rem 1rem 0; }
+    .summary-row { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .stat-value { font-size: 22px; }
+    .toolbar { flex-wrap: wrap; }
+    .unit-card { padding: 9px 12px; }
+    .unit-name { font-size: 12px; }
+  }
+  @media (max-width: 380px) {
+    .summary-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Hidden file input */
+  #importInput { display: none; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="header">
+    <div class="header-title">
+      <i class="ti ti-shield-half"></i>
+      Liber Militum
+    </div>
+    <div class="faction-filter" id="factionFilter"></div>
+  </header>
+
+  <main class="content">
+    <div class="summary-row" id="summaryTop"></div>
+    <div class="summary-row" id="summaryBot" style="margin-top:8px"></div>
+
+    <div class="progress-wrap" id="progressBar"></div>
+    <div class="legend" id="legend"></div>
+
+    <div class="divider"></div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input type="text" id="searchInput" placeholder="Search the roster…" oninput="render()" aria-label="Search units">
+      </div>
+      <select class="grim-select" id="sortSel" onchange="render()" aria-label="Sort order">
+        <option value="name-asc">Name A–Z</option>
+        <option value="name-desc">Name Z–A</option>
+        <option value="count-desc">Most models</option>
+        <option value="count-asc">Fewest models</option>
+        <option value="faction">By faction</option>
+      </select>
+      <button class="add-btn" onclick="openModal()">
+        <i class="ti ti-plus"></i> Enlist unit
+      </button>
+    </div>
+
+    <div class="io-bar">
+      <button class="io-btn" onclick="exportData()"><i class="ti ti-download"></i> Export roster</button>
+      <button class="io-btn" onclick="document.getElementById('importInput').click()"><i class="ti ti-upload"></i> Import roster</button>
+      <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+      <span class="io-note">Export to sync between devices</span>
+    </div>
+
+    <div id="sectionsContainer"></div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="overlayClick(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-title" id="modalTitle">Enlist warrior</div>
+    <div class="field">
+      <label>Unit name</label>
+      <input type="text" id="mName" placeholder="e.g. Intercessor Squad">
+    </div>
+    <div class="field">
+      <label>Faction</label>
+      <input type="text" id="mFaction" placeholder="e.g. Space Marines">
+    </div>
+    <div class="field">
+      <label>Number of models</label>
+      <input type="number" id="mCount" min="1" value="1">
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="mStatus"></select>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="mNotes" placeholder="Colours used, basing scheme, references…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Dismiss</button>
+      <button class="btn-save" id="modalSaveBtn" onclick="saveUnit()">Enlist</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const STATUS_ORDER = ['complete','based','painted','assembled','on_sprue'];
+const STATUS = {
+  complete:  { label:'Complete',  sectionTitle:'Battle Ready',   color:'#2d6b3a' },
+  based:     { label:'Based',     sectionTitle:'Based & Primed', color:'#4a6b8a' },
+  painted:   { label:'Painted',   sectionTitle:'Painted',        color:'#7a5c9e' },
+  assembled: { label:'Assembled', sectionTitle:'Assembled',      color:'#b87333' },
+  on_sprue:  { label:'On Sprue',  sectionTitle:'On the Sprue',   color:'#6b6560' },
+};
+
+const KEY = 'wh40k_liber_v1';
+const expandedNotes = new Set();
+const collapsedSections = new Set();
+let editIndex = null;
+let activeFaction = 'all';
+
+function loadUnits() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY));
+    if (raw) return raw;
+    const old = JSON.parse(localStorage.getItem('wh40k_tracker_v2') || localStorage.getItem('wh40k_tracker_v4'));
+    if (old) return old.map(u => ({ ...u, status: migrateStatus(u.status) }));
+  } catch(e) {}
+  return [];
+}
+function migrateStatus(s) {
+  if (s === 'wip' || s === 'painted') return 'painted';
+  if (s === 'unpainted' || s === 'on_sprue') return 'on_sprue';
+  return STATUS[s] ? s : 'on_sprue';
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch(e) {} }
+
+let units = loadUnits();
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function getFiltered() {
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  return units.filter(u => {
+    const mf = activeFaction === 'all' || u.faction === activeFaction;
+    const ms = !q || u.name.toLowerCase().includes(q) || (u.faction||'').toLowerCase().includes(q) || (u.notes||'').toLowerCase().includes(q);
+    return mf && ms;
+  });
+}
+
+function getSorted(arr) {
+  const sort = document.getElementById('sortSel')?.value || 'name-asc';
+  return arr.slice().sort((a, b) => {
+    if (sort === 'name-asc') return a.name.localeCompare(b.name);
+    if (sort === 'name-desc') return b.name.localeCompare(a.name);
+    if (sort === 'count-desc') return b.count - a.count;
+    if (sort === 'count-asc') return a.count - b.count;
+    if (sort === 'faction') return (a.faction||'').localeCompare(b.faction||'');
+    return 0;
+  });
+}
+
+function unitCardHTML(u) {
+  const gi = units.indexOf(u);
+  const hasNote = u.notes && u.notes.trim();
+  const exp = expandedNotes.has(gi);
+  return `
+  <div class="unit-card" style="border-left-color:${STATUS[u.status]?.color||'#3a3530'}">
+    <div class="unit-card-main">
+      <div class="unit-info">
+        <div class="unit-name">${esc(u.name)}</div>
+        <div class="unit-meta">${esc(u.faction || 'No faction')}</div>
+        ${hasNote && !exp ? `<div class="unit-note-preview" onclick="toggleNote(${gi})">${esc(u.notes)}</div>` : ''}
+      </div>
+      <div class="unit-count"><i class="ti ti-users" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>${u.count}</div>
+      <select class="unit-status-sel" onchange="changeStatus(${gi},this.value)" aria-label="Status">
+        ${STATUS_ORDER.map(k => `<option value="${k}" ${u.status===k?'selected':''}>${STATUS[k].label}</option>`).join('')}
+      </select>
+      <div class="unit-actions">
+        ${hasNote ? `<button class="icon-btn" onclick="toggleNote(${gi})" aria-label="${exp?'Hide':'Show'} notes" title="Notes"><i class="ti ti-${exp?'chevron-up':'notes'}"></i></button>` : ''}
+        <button class="icon-btn" onclick="openModal(${gi})" aria-label="Edit unit" title="Edit"><i class="ti ti-edit"></i></button>
+        <button class="icon-btn del" onclick="deleteUnit(${gi})" aria-label="Delete unit" title="Delete"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+    ${hasNote && exp ? `<div class="unit-note-full">${esc(u.notes)}</div>` : ''}
+  </div>`;
+}
+
+function render() {
+  save();
+  const fu = getFiltered();
+  const counts = { complete:0, based:0, painted:0, assembled:0, on_sprue:0 };
+  let totalModels = 0, completeModels = 0;
+  units.forEach(u => {
+    if (counts[u.status] !== undefined) counts[u.status]++;
+    totalModels += u.count;
+    if (u.status === 'complete') completeModels += u.count;
+  });
+
+  // Faction filter
+  const factions = ['all', ...new Set(units.map(u => u.faction).filter(Boolean))];
+  document.getElementById('factionFilter').innerHTML = factions.map(f =>
+    `<button class="faction-btn ${f===activeFaction?'active':''}" onclick="setFaction('${esc(f)}')">${f==='all'?'All':esc(f)}</button>`
+  ).join('');
+
+  // Summary
+  document.getElementById('summaryTop').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total units</div><div class="stat-value">${units.length}</div><div class="stat-sub">${totalModels} models</div></div>
+    <div class="stat-card"><div class="stat-label">Complete</div><div class="stat-value" style="color:var(--c-complete)">${counts.complete}</div><div class="stat-sub">${completeModels} models done</div></div>
+    <div class="stat-card"><div class="stat-label">Based</div><div class="stat-value" style="color:var(--c-based)">${counts.based}</div><div class="stat-sub">based &amp; primed</div></div>
+  `;
+  document.getElementById('summaryBot').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Painted</div><div class="stat-value" style="color:var(--c-painted)">${counts.painted}</div><div class="stat-sub">colours applied</div></div>
+    <div class="stat-card"><div class="stat-label">Assembled</div><div class="stat-value" style="color:var(--c-assembled)">${counts.assembled}</div><div class="stat-sub">glued &amp; ready</div></div>
+    <div class="stat-card"><div class="stat-label">On Sprue</div><div class="stat-value" style="color:var(--c-sprue)">${counts.on_sprue}</div><div class="stat-sub">unassembled</div></div>
+  `;
+
+  // Progress bar
+  const tot = units.length || 1;
+  document.getElementById('progressBar').innerHTML = STATUS_ORDER.map(s =>
+    `<div class="pb-seg" style="background:${STATUS[s].color};width:${Math.round((counts[s]/tot)*100)}%"></div>`
+  ).join('');
+
+  // Legend
+  document.getElementById('legend').innerHTML = STATUS_ORDER.map(s =>
+    `<div class="legend-item"><div class="legend-swatch" style="background:${STATUS[s].color}"></div>${STATUS[s].label}</div>`
+  ).join('');
+
+  // Sections
+  let html = '';
+  if (units.length === 0) {
+    html = `<div class="empty-app"><i class="ti ti-sword"></i><p>Your liber is empty. Enlist your first unit above.</p></div>`;
+  } else {
+    STATUS_ORDER.forEach(status => {
+      const s = STATUS[status];
+      const inSection = getSorted(fu.filter(u => u.status === status));
+      const collapsed = collapsedSections.has(status);
+      html += `
+      <div class="status-section">
+        <div class="status-section-header" onclick="toggleSection('${status}')" role="button" aria-expanded="${!collapsed}">
+          <div class="section-stripe" style="background:${s.color}"></div>
+          <span class="section-title" style="color:${s.color}">${s.sectionTitle}</span>
+          <span class="section-count">${inSection.length} unit${inSection.length!==1?'s':''}</span>
+          <span class="section-toggle"><i class="ti ti-chevron-${collapsed?'down':'up'}"></i></span>
+        </div>
+        ${!collapsed ? `<div class="unit-list">${inSection.length ? inSection.map(u => unitCardHTML(u)).join('') : `<div class="empty-section">No warriors in this muster.</div>`}</div>` : ''}
+      </div>`;
+    });
+  }
+  document.getElementById('sectionsContainer').innerHTML = html;
+}
+
+function setFaction(f) { activeFaction = f; render(); }
+function toggleNote(i) { expandedNotes.has(i) ? expandedNotes.delete(i) : expandedNotes.add(i); render(); }
+function toggleSection(s) { collapsedSections.has(s) ? collapsedSections.delete(s) : collapsedSections.add(s); render(); }
+function changeStatus(i, val) { units[i].status = val; render(); }
+
+function deleteUnit(i) {
+  const name = units[i].name;
+  units.splice(i, 1);
+  expandedNotes.clear();
+  if (activeFaction !== 'all' && !units.some(u => u.faction === activeFaction)) activeFaction = 'all';
+  render();
+  showToast(`${name} removed from the liber`);
+}
+
+function openModal(i) {
+  editIndex = (i !== undefined) ? i : null;
+  const u = editIndex !== null ? units[editIndex] : null;
+  document.getElementById('modalTitle').textContent = u ? 'Edit warrior' : 'Enlist warrior';
+  document.getElementById('modalSaveBtn').textContent = u ? 'Confirm' : 'Enlist';
+  document.getElementById('mName').value = u ? u.name : '';
+  document.getElementById('mFaction').value = u ? (u.faction || '') : '';
+  document.getElementById('mCount').value = u ? u.count : 1;
+  document.getElementById('mNotes').value = u ? (u.notes || '') : '';
+  document.getElementById('mStatus').innerHTML = STATUS_ORDER.map(k =>
+    `<option value="${k}" ${(u?.status||'on_sprue')===k?'selected':''}>${STATUS[k].label}</option>`
+  ).join('');
+  document.getElementById('modalOverlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('mName').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  editIndex = null;
+}
+
+function overlayClick(e) { if (e.target.id === 'modalOverlay') closeModal(); }
+
+function saveUnit() {
+  const name = document.getElementById('mName').value.trim();
+  if (!name) { document.getElementById('mName').focus(); return; }
+  const unit = {
+    name,
+    faction: document.getElementById('mFaction').value.trim(),
+    count: Math.max(1, parseInt(document.getElementById('mCount').value) || 1),
+    status: document.getElementById('mStatus').value,
+    notes: document.getElementById('mNotes').value.trim(),
+  };
+  const isEdit = editIndex !== null;
+  if (isEdit) units[editIndex] = unit;
+  else units.push(unit);
+  closeModal();
+  render();
+  showToast(isEdit ? `${unit.name} updated` : `${unit.name} enlisted`);
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(units, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `liber-militum-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Roster exported');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error();
+      units = imported.map(u => ({ ...u, status: migrateStatus(u.status) }));
+      render();
+      showToast(`${units.length} units imported`);
+    } catch {
+      showToast('Import failed — invalid file');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+render();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+}
+</script>
+</body>
+</html>
